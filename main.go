@@ -34,6 +34,10 @@ func main() {
 			Name: "mapb",
 			Desc: "Print previous 20 location areas",
 		},
+		"explore": {
+			Name: "explore",
+			Desc: "explore <area_name> prints pokemons in <area_name>",
+		},
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -52,13 +56,13 @@ Loop:
 		scanner.Scan()
 
 		text := scanner.Text()
-		input := cleanInput(text)
+		args := cleanInput(text)
 
-		if len(input) == 0 {
+		if len(args) == 0 {
 			continue
 		}
 
-		command := input[0]
+		command := args[0]
 
 		switch command {
 		case "help":
@@ -67,12 +71,31 @@ Loop:
 			printMap(areas)
 		case "mapb":
 			printBMap(areas)
+		case "explore":
+			printExplore(args, api)
 		case "exit":
 			break Loop
 		default:
 			fmt.Println("Unknown command:", command)
 			continue
 		}
+	}
+}
+
+func printExplore(args []string, api *PokeAPI) {
+	if len(args) != 2 {
+		fmt.Println("error: not enough arguments given")
+	}
+
+	areaName := args[1]
+
+	pokemons := api.Explore(areaName)
+
+	fmt.Println("Exploring", areaName, "...")
+	fmt.Println("Found Pokemon:")
+
+	for _, pokemon := range pokemons {
+		fmt.Println(" -", pokemon)
 	}
 }
 

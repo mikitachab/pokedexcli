@@ -2,11 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"time"
 )
+
+const LOCATION_AREA_DETAILS_URL = "https://pokeapi.co/api/v2/location-area/%s/"
 
 type PokeAPI struct {
 	cache *Cache
@@ -55,4 +58,30 @@ func (a *PokeAPI) GetLocationsAreas(url string) ([]string, string) {
 		names[i] = result.Name
 	}
 	return names, areas.Next
+}
+
+type PokemonDeails struct {
+	Name string `json:"name"`
+}
+
+type AreaPokemon struct {
+	Pokemon PokemonDeails `json:"pokemon"`
+}
+
+type LocationAreasDeails struct {
+	Pokemons []AreaPokemon `json:"pokemon_encounters"`
+}
+
+func (a *PokeAPI) Explore(area string) []string {
+	url := fmt.Sprintf(LOCATION_AREA_DETAILS_URL, area)
+	body := a.CachedGet(url)
+	var areaDeails LocationAreasDeails
+	json.Unmarshal(body, &areaDeails)
+
+	pokemons := make([]string, len(areaDeails.Pokemons))
+	for i, pokemon := range areaDeails.Pokemons {
+		pokemons[i] = pokemon.Pokemon.Name
+	}
+
+	return pokemons
 }
