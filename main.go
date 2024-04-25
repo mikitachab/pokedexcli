@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"strings"
 )
@@ -38,7 +39,16 @@ func main() {
 			Name: "explore",
 			Desc: "explore <area_name> prints pokemons in <area_name>",
 		},
+		"catch": {
+			Name: "catch",
+			Desc: "catch <pokemon name> try to catch pokemon",
+		},
+		"inspect": {
+			Name: "inspect",
+			Desc: "inspect <pokemon name> to print pokemon stats",
+		},
 	}
+	catchedPokemons := make(map[string]PokemonStats)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	api := NewPokeApi()
@@ -73,12 +83,71 @@ Loop:
 			printBMap(areas)
 		case "explore":
 			printExplore(args, api)
+		case "catch":
+			catchPokemon(args, api, catchedPokemons)
+		case "inspect":
+			printInspect(args, catchedPokemons)
+		case "pokedex":
+			printPokemons(catchedPokemons)
 		case "exit":
 			break Loop
 		default:
 			fmt.Println("Unknown command:", command)
 			continue
 		}
+	}
+}
+
+func printPokemons(pokemons map[string]PokemonStats) {
+	fmt.Println("Your Pokedex:")
+	for name := range pokemons {
+		fmt.Println(" -", name)
+	}
+}
+
+func catchPokemon(args []string, api *PokeAPI, pokemons map[string]PokemonStats) {
+	if len(args) != 2 {
+		fmt.Println("error: not enough arguments given")
+	}
+	pokemonName := args[1]
+
+	fmt.Println("Throwing a Pokeball at", pokemonName+"...")
+
+	if rand.IntN(100) > 50 {
+		fmt.Println(pokemonName, "escaped!")
+		return
+	}
+
+	stats := api.Inspect(pokemonName)
+	fmt.Println(pokemonName, "was caught!")
+	pokemons[pokemonName] = stats
+}
+
+func printInspect(args []string, pokemons map[string]PokemonStats) {
+	if len(args) != 2 {
+		fmt.Println("error: not enough arguments given")
+	}
+
+	name := args[1]
+	stats, ok := pokemons[name]
+
+	if !ok {
+		fmt.Println("you have not caught that pokemon")
+		return
+	}
+
+	fmt.Println("Name:", name)
+	fmt.Println("Weight:", stats.Weight)
+	fmt.Println("Height:", stats.Height)
+
+	fmt.Println("Stats:")
+	for k, v := range stats.Stats {
+		fmt.Println(" -", k, ":", v)
+	}
+
+	fmt.Println("Types:")
+	for _, t := range stats.Types {
+		fmt.Println(" -", t)
 	}
 }
 

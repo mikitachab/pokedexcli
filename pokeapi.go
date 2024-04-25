@@ -10,6 +10,7 @@ import (
 )
 
 const LOCATION_AREA_DETAILS_URL = "https://pokeapi.co/api/v2/location-area/%s/"
+const INSPECT_URL = "https://pokeapi.co/api/v2/pokemon/%s/"
 
 type PokeAPI struct {
 	cache *Cache
@@ -68,14 +69,14 @@ type AreaPokemon struct {
 	Pokemon PokemonDeails `json:"pokemon"`
 }
 
-type LocationAreasDeails struct {
+type LocationAreasDetails struct {
 	Pokemons []AreaPokemon `json:"pokemon_encounters"`
 }
 
 func (a *PokeAPI) Explore(area string) []string {
 	url := fmt.Sprintf(LOCATION_AREA_DETAILS_URL, area)
 	body := a.CachedGet(url)
-	var areaDeails LocationAreasDeails
+	var areaDeails LocationAreasDetails
 	json.Unmarshal(body, &areaDeails)
 
 	pokemons := make([]string, len(areaDeails.Pokemons))
@@ -84,4 +85,58 @@ func (a *PokeAPI) Explore(area string) []string {
 	}
 
 	return pokemons
+}
+
+type ApiStatDesc struct {
+	Name string `json:"name"`
+}
+
+type ApiStat struct {
+	Value    int         `json:"base_stat"`
+	StatDesc ApiStatDesc `json:"stat"`
+}
+
+type ApiInspectDetails struct {
+	Height int              `json:"height"`
+	Weight int              `json:"weight"`
+	Stats  []ApiStat        `json:"stats"`
+	Types  []ApiPokemonType `json:"types"`
+}
+
+type ApiTypeDesc struct {
+	Name string `json:"name"`
+}
+
+type ApiPokemonType struct {
+	TypeDecs ApiTypeDesc `json:"type"`
+}
+
+type PokemonStats struct {
+	Height int
+	Weight int
+	Stats  map[string]int
+	Types  []string
+}
+
+func (a *PokeAPI) Inspect(area string) PokemonStats {
+	url := fmt.Sprintf(INSPECT_URL, area)
+	body := a.CachedGet(url)
+	var details ApiInspectDetails
+	json.Unmarshal(body, &details)
+
+	stats := PokemonStats{
+		Weight: details.Weight,
+		Height: details.Height,
+		Stats:  make(map[string]int),
+		Types:  make([]string, len(details.Types)),
+	}
+
+	for _, stat := range details.Stats {
+		stats.Stats[stat.StatDesc.Name] = stat.Value
+	}
+	for i, t := range details.Types {
+		stats.Types[i] = t.TypeDecs.Name
+	}
+
+	return stats
 }
